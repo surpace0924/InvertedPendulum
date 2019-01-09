@@ -1,0 +1,53 @@
+
+ROM used: 624 (15%)
+          624 (15%) including unused fragments
+
+          1 Average locations per line
+          20 Average locations per statement
+
+RAM used: 10 (3%) at main() level
+          42 (11%) worst case
+
+Stack used: 2 worst case (out of 16 total available)
+
+Lines Stmts  %   Files
+----- ----- ---  -----
+   91    32 100  PIC_InvertedPendulum.c
+  527     0   0  ..\..\..\..\Program Files (x86)\PICC\devices\16f1827.h
+----- -----
+  618    32 Total
+
+Page ROM  %  RAM   Vol Diff  Functions:
+---- --- --- ---   --- ----  ----------
+ Inline        1             @delay_ms1
+0    446  71   5   173  4.0  rda
+ Inline        2             @ITOF
+ Inline       14             @DIVFF
+ Inline       13             @MULFF
+ Inline        4             @SFTOI
+0     88  14   1   404  2.8  initSystem
+0     31   5   0   228  3.6  driveMotor
+0     27   4   0    43  1.3  MAIN
+
+Program metrics:
+    Functions               4
+    Statements              32
+    Comments                102
+    Volume (V)              1168
+    Difficilty (D)          11.5
+    Effort to implement (E) 13417
+    Time to implement (T)   12 minutes
+    Est Delivered Bugs (B)  0
+    Cyclomatic Complexity   4
+    Maintainability (MI)    158
+
+ Segment     Used  Free
+-----------  ----  ----
+00000-00002     3  0  
+00003-00003     0  1  
+00004-00020    29  0  
+00021-007FF   592  1423  
+00800-00FFF     0  2048  
+
+
+

@@ -1,0 +1,366 @@
+CCS PCM C Compiler, Version 4.119, 93512982               24-12-18 16:44
+
+               Filename: C:\Users\Design-lab-04\Desktop\PIC_InvertedPendulum\PIC_InvertedPendulum.lst
+
+               ROM used: 624 words (15%)
+                         Largest free fragment is 2048
+               RAM used: 10 (3%) at main() level
+                         42 (11%) worst case
+               Stack:    2 worst case (1 in main + 1 for interrupts)
+
+*
+0000:  MOVLP  00
+0001:  GOTO   256
+0002:  NOP
+*
+0004:  CLRF   03
+0005:  CLRF   0A
+0006:  MOVLB  00
+0007:  MOVF   77,W
+0008:  MOVWF  20
+0009:  MOVF   78,W
+000A:  MOVWF  21
+000B:  MOVF   79,W
+000C:  MOVWF  22
+000D:  MOVF   7A,W
+000E:  MOVWF  23
+000F:  CLRF   05
+0010:  MOVLW  91
+0011:  MOVWF  04
+0012:  BTFSS  00.5
+0013:  GOTO   016
+0014:  BTFSC  11.5
+0015:  GOTO   01F
+0016:  MOVF   20,W
+0017:  MOVWF  77
+0018:  MOVF   21,W
+0019:  MOVWF  78
+001A:  MOVF   22,W
+001B:  MOVWF  79
+001C:  MOVF   23,W
+001D:  MOVWF  7A
+001E:  RETFIE
+001F:  MOVLP  00
+0020:  GOTO   021
+....................  
+.................... #include <16f1827.h> 
+.................... //////// Standard Header file for the PIC16F1827 device //////////////// 
+.................... #device PIC16F1827 
+.................... #list 
+....................  
+.................... #fuses HS, NOWDT, NOPROTECT, PUT, BROWNOUT, NOLVP, MCLR 
+.................... #device ADC = 8 
+.................... #use delay(CLOCK = 16000000) 
+*
+021E:  MOVLW  20
+021F:  MOVWF  05
+0220:  MOVLW  07
+0221:  MOVWF  04
+0222:  MOVF   00,W
+0223:  BTFSC  03.2
+0224:  GOTO   233
+0225:  MOVLW  05
+0226:  MOVWF  78
+0227:  CLRF   77
+0228:  DECFSZ 77,F
+0229:  GOTO   228
+022A:  DECFSZ 78,F
+022B:  GOTO   227
+022C:  MOVLW  2E
+022D:  MOVWF  77
+022E:  DECFSZ 77,F
+022F:  GOTO   22E
+0230:  GOTO   231
+0231:  DECFSZ 00,F
+0232:  GOTO   225
+.................... #use rs232(BAUD = 57600, XMIT = PIN_B2, RCV = PIN_B1) 
+.................... #byte port_a = 0x00c 
+.................... #byte port_b = 0x00d 
+.................... #use fast_io(a) 
+.................... #use fast_io(b) 
+....................  
+.................... const unsigned int CW = 0; 
+.................... const unsigned int CCW = 1; 
+.................... const unsigned int BRK = 2; 
+.................... const unsigned int MT_FREQ = 7.4; 
+.................... const unsigned int PWM_CNT = (int)(1000.0 / MT_FREQ) - 1; 
+....................  
+.................... int dir = 0; 
+.................... int pwm = 0; 
+....................  
+.................... //プロトタイプ宣言 
+.................... void initSystem(void); 
+.................... void driveMotor(void); 
+....................  
+.................... // シリアル受信割り込み 
+.................... // 受信後，ビチE��マスクしてチE�EタをデコーチE 
+.................... #INT_RDA 
+.................... void rda(void) 
+.................... { 
+....................    unsigned char rcv_data; 
+....................    rcv_data = getc(); 
+*
+0021:  BTFSS  11.5
+0022:  GOTO   021
+0023:  MOVLB  03
+0024:  MOVF   19,W
+0025:  MOVLB  00
+0026:  MOVWF  28
+....................    dir = rcv_data >> 7; 
+0027:  CLRF   24
+0028:  BTFSC  28.7
+0029:  BSF    24.0
+....................    pwm = (int)((float)(rcv_data & 0b01111111) / 100 * PWM_CNT) + 1; 
+002A:  MOVF   28,W
+002B:  ANDLW  7F
+002C:  CLRF   2A
+002D:  MOVWF  29
+*
+004A:  MOVF   77,W
+004B:  MOVWF  29
+004C:  MOVF   78,W
+004D:  MOVWF  2A
+004E:  MOVF   79,W
+004F:  MOVWF  2B
+0050:  MOVF   7A,W
+0051:  MOVWF  2C
+0052:  MOVF   2C,W
+0053:  MOVWF  30
+0054:  MOVF   2B,W
+0055:  MOVWF  2F
+0056:  MOVF   2A,W
+0057:  MOVWF  2E
+0058:  MOVF   29,W
+0059:  MOVWF  2D
+005A:  CLRF   34
+005B:  CLRF   33
+005C:  MOVLW  48
+005D:  MOVWF  32
+005E:  MOVLW  85
+005F:  MOVWF  31
+*
+0129:  MOVF   77,W
+012A:  MOVWF  29
+012B:  MOVF   78,W
+012C:  MOVWF  2A
+012D:  MOVF   79,W
+012E:  MOVWF  2B
+012F:  MOVF   7A,W
+0130:  MOVWF  2C
+0131:  MOVF   2C,W
+0132:  MOVWF  30
+0133:  MOVF   2B,W
+0134:  MOVWF  2F
+0135:  MOVF   2A,W
+0136:  MOVWF  2E
+0137:  MOVF   29,W
+0138:  MOVWF  2D
+0139:  CLRF   34
+013A:  CLRF   33
+013B:  MOVLW  0D
+013C:  MOVWF  32
+013D:  MOVLW  86
+013E:  MOVWF  31
+*
+01B3:  MOVF   7A,W
+01B4:  MOVWF  2C
+01B5:  MOVF   79,W
+01B6:  MOVWF  2B
+01B7:  MOVF   78,W
+01B8:  MOVWF  2A
+01B9:  MOVF   77,W
+01BA:  MOVWF  29
+*
+01D9:  MOVLW  01
+01DA:  ADDWF  78,W
+01DB:  MOVWF  25
+.................... } 
+....................  
+01DC:  BCF    11.5
+01DD:  MOVLP  00
+01DE:  GOTO   016
+.................... void initSystem(void) 
+.................... { 
+....................    setup_oscillator(OSC_NORMAL | OSC_16MHZ | OSC_PLL_ON); 
+01DF:  MOVLW  F8
+01E0:  MOVLB  01
+01E1:  MOVWF  19
+....................  
+....................    set_tris_a(0); 
+01E2:  MOVLW  00
+01E3:  MOVWF  0C
+....................    set_tris_b(0b00000010); 
+01E4:  MOVLW  02
+01E5:  MOVWF  0D
+....................    output_a(0); 
+01E6:  MOVLB  02
+01E7:  CLRF   0C
+....................    output_b(0); 
+01E8:  CLRF   0D
+....................  
+....................    setup_uart(true); 
+01E9:  MOVLB  03
+01EA:  BSF    1D.7
+01EB:  BSF    1D.4
+....................    set_uart_speed(57600); 
+01EC:  MOVLW  10
+01ED:  MOVWF  1B
+01EE:  MOVLW  A6
+01EF:  MOVWF  1E
+....................  
+....................    setup_ccp1(CCP_PWM); 
+01F0:  MOVLB  02
+01F1:  BCF    1D.0
+01F2:  BCF    1D.1
+01F3:  BCF    1D.2
+01F4:  BCF    0D.3
+01F5:  MOVLW  0C
+01F6:  MOVLB  05
+01F7:  MOVWF  13
+01F8:  CLRF   14
+01F9:  CLRF   15
+01FA:  BCF    1E.0
+01FB:  BCF    1E.1
+01FC:  MOVLW  01
+01FD:  MOVWF  16
+....................    setup_ccp2(CCP_PWM); 
+01FE:  MOVLB  02
+01FF:  BCF    1D.3
+0200:  BCF    1D.4
+0201:  BCF    0C.7
+0202:  MOVLW  0C
+0203:  MOVLB  05
+0204:  MOVWF  1A
+0205:  CLRF   1B
+0206:  CLRF   1C
+0207:  BCF    1E.2
+0208:  BCF    1E.3
+0209:  MOVLW  01
+020A:  MOVWF  1D
+....................    setup_timer_2(T2_DIV_BY_4, PWM_CNT, 1); 
+020B:  MOVLW  00
+020C:  MOVWF  78
+020D:  IORLW  05
+020E:  MOVLB  00
+020F:  MOVWF  1C
+0210:  MOVLW  8D
+0211:  MOVWF  1B
+....................    set_pwm1_duty(0); 
+0212:  MOVLB  05
+0213:  CLRF   11
+....................    set_pwm2_duty(0); 
+0214:  CLRF   18
+....................  
+....................    enable_interrupts(INT_RDA); 
+0215:  MOVLB  01
+0216:  BSF    11.5
+....................    enable_interrupts(GLOBAL); 
+0217:  MOVLW  C0
+0218:  IORWF  0B,F
+....................  
+....................    delay_ms(500); 
+0219:  MOVLW  02
+021A:  MOVLB  00
+021B:  MOVWF  26
+021C:  MOVLW  FA
+021D:  MOVWF  27
+*
+0233:  DECFSZ 26,F
+0234:  GOTO   21C
+.................... } 
+0235:  MOVLP  00
+0236:  GOTO   26E (RETURN)
+....................  
+.................... void driveMotor(void) 
+.................... { 
+....................    switch (dir) 
+....................    { 
+0237:  MOVF   24,W
+0238:  XORLW  00
+0239:  BTFSC  03.2
+023A:  GOTO   242
+023B:  XORLW  01
+023C:  BTFSC  03.2
+023D:  GOTO   249
+023E:  XORLW  03
+023F:  BTFSC  03.2
+0240:  GOTO   24E
+0241:  GOTO   24E
+....................    case CW: 
+....................       set_pwm1_duty(0); 
+0242:  MOVLB  05
+0243:  CLRF   11
+....................       set_pwm2_duty(pwm); 
+0244:  MOVLB  00
+0245:  MOVF   25,W
+0246:  MOVLB  05
+0247:  MOVWF  18
+....................       break; 
+0248:  GOTO   253
+....................  
+....................    case CCW: 
+....................       set_pwm1_duty(pwm); 
+0249:  MOVF   25,W
+024A:  MOVLB  05
+024B:  MOVWF  11
+....................       set_pwm2_duty(0); 
+024C:  CLRF   18
+....................       break; 
+024D:  GOTO   253
+....................  
+....................    case BRK: 
+....................    default: 
+....................       set_pwm1_duty(PWM_CNT); 
+024E:  MOVLW  8D
+024F:  MOVLB  05
+0250:  MOVWF  11
+....................       set_pwm2_duty(PWM_CNT); 
+0251:  MOVWF  18
+....................       break; 
+0252:  GOTO   253
+....................    } 
+.................... } 
+0253:  MOVLP  00
+0254:  MOVLB  00
+0255:  GOTO   26F (RETURN)
+....................  
+.................... void main(void) 
+.................... { 
+0256:  CLRF   05
+0257:  CLRF   04
+0258:  MOVLW  1F
+0259:  ANDWF  03,F
+025A:  MOVLW  10
+025B:  MOVLB  03
+025C:  MOVWF  1B
+025D:  MOVLW  A6
+025E:  MOVWF  1E
+025F:  MOVLW  90
+0260:  MOVWF  1D
+0261:  MOVLB  00
+0262:  CLRF   24
+0263:  CLRF   25
+0264:  MOVLB  03
+0265:  CLRF   0C
+0266:  CLRF   0D
+0267:  MOVLB  02
+0268:  CLRF   12
+0269:  CLRF   11
+026A:  CLRF   14
+026B:  CLRF   13
+....................    initSystem(); 
+026C:  MOVLB  00
+026D:  GOTO   1DF
+....................  
+....................    while (true) 
+....................    {   	 
+.................... 		driveMotor();	 
+026E:  GOTO   237
+.................... 	} 
+026F:  GOTO   26E
+.................... } 
+0270:  SLEEP
+
+Configuration Fuses:
+   Word  1: 3FC2   HS NOWDT PUT MCLR NOPROTECT NOCPD BROWNOUT NOCLKOUT IESO FCMEN
+   Word  2: 1FFF   NOWRT PLL STVREN BORV19 NODEBUG NOLVP
