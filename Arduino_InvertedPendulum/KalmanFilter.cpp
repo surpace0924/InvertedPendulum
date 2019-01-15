@@ -10,21 +10,21 @@ KalmanFilter::KalmanFilter()
     P[1][1] = 0.0;
 };
 
-void KalmanFilter::setAngle(float newAngle)
+void KalmanFilter::setAngle(double newAngle)
 {
     angle = newAngle;
 };
 
-float KalmanFilter::calcAngle(float newAngle, float newRate, float dt)
+double KalmanFilter::calcAngle(double newAngle, double newRate, double dt)
 {
 
     // variances
-    float Q_angle = 0.001;
-    float Q_bias = 0.003;
-    float R_measure = 0.03;
+    double Q_angle = 0.001;
+    double Q_bias = 0.003;
+    double R_measure = 0.03;
 
     // step 1
-    float rate = newRate - bias;
+    double rate = newRate - bias;
     angle += dt * rate;
 
     // step 2
@@ -34,13 +34,13 @@ float KalmanFilter::calcAngle(float newAngle, float newRate, float dt)
     P[1][1] += Q_bias * dt;
 
     // step 3
-    float y = newAngle - angle;
+    double y = newAngle - angle;
 
     // step 4
-    float S = P[0][0] + R_measure;
+    double S = P[0][0] + R_measure;
 
     // step 5
-    float K[2];
+    double K[2];
     K[0] = P[0][0] / S;
     K[1] = P[1][0] / S;
 
@@ -49,8 +49,8 @@ float KalmanFilter::calcAngle(float newAngle, float newRate, float dt)
     bias += K[1] * y;
 
     // step 7
-    float P00_temp = P[0][0];
-    float P01_temp = P[0][1];
+    double P00_temp = P[0][0];
+    double P01_temp = P[0][1];
     P[0][0] -= K[0] * P00_temp;
     P[0][1] -= K[0] * P01_temp;
     P[1][0] -= K[1] * P00_temp;

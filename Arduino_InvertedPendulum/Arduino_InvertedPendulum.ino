@@ -1,243 +1,161 @@
-/*
-#include <Wire.h>
 #include <SoftwareSerial.h>
-    SoftwareSerial mySerial(A2, A3); // RX, TX
-#include "KalmanFilter.h"
-#include "PID.h"
 #include "IMU.h"
-#include "Driver.h"
+#include "KalmanFilter.h"
 
-#define K1 0.15
-#define K2 0 //0.1
-#define K3 -0.02
-#define K4 0 //0.002
+// 各項の係数の定義
+constexpr double KP = 0.189; // 比例項
+constexpr double KI = 1.667; // 積分項
+constexpr double KD = 0.010; // 微分項
 
-PID pid_x(0, 1, 0);
-PID pid(K1, K2, 0);
+// 各種変数の宣言
+uint32_t pre_time;          // システム開始から前回ループまでの経過時間[usec]
+double dt;                  // ループの間隔[sec]
+double angle, gyro;         // ロボットの角度と角速度
+double calib_angle;         // 角度のキャリブレーション
+double integral = 0;        // 角度の積算
+double P_val, I_val, D_val; // 各項の出力
+double power;               // 最終的な出力値
 
+// 各種インスタンスの生成
 KalmanFilter kf;
-float calib_angle;
-float calib_gyro;
-float body_v = 0;
-float body_x = 0;
-long prev_time;
-
-float i = 0;
+SoftwareSerial mySerial(A1, A0); // RX, TX
 
 void setup()
 {
-    // TCCR3B = (TCCR3B & 0b11111000) | 0x01; //31.37255 [kHz]
-    // TCCR4B = (TCCR4B & 0b11111000) | 0x01; //31.37255 [kHz]
+    // キャリブレーションの変更ボタンの初期化
+    pinMode(11, INPUT_PULLUP);
+    pinMode(12, INPUT_PULLUP);
 
+    // ハードウェアシリアル：デバッグ用
     Serial.begin(115200);
-    mySerial.begin(57600);
+    // ソフトウェアシリアル：PICとの通信用
+    mySerial.begin(57600); // 上限が57600bps
 
-    // モータードライバの初期化。
-    pinMode(2, OUTPUT);
-    pinMode(3, OUTPUT);
-    pinMode(6, OUTPUT);
-    pinMode(7, OUTPUT);
+    // IMU初期化
+    initIMU();
 
-    // 加速度/ジャイロセンサーの初期化。
-    Wire.begin();
-    if (readMPU6050(MPU6050_WHO_AM_I) != 0x68)
-    {
-        Serial.println("\nWHO_AM_I error.");
-        while (true)
-            ;
-    }
+    // 起動時の角度を加速度計からとる
+    angle = calcAccelAngle();
+    // カルマンフィルタの初期値に
+    kf.setAngle(angle);
+    // 角度のキャリブレーションにも
+    calib_angle = angle;
 
-    writeMPU6050(MPU6050_SMPLRT_DIV, 0x07);   // sample rate: 8kHz/(7+1) = 1kHz
-    writeMPU6050(MPU6050_CONFIG, 0x00);       // disable DLPF, gyro output rate = 8kHz
-    writeMPU6050(MPU6050_GYRO_CONFIG, 0x00);  // gyro range: ±250dps
-    writeMPU6050(MPU6050_ACCEL_CONFIG, 0x00); // accel range: ±2g
-    writeMPU6050(MPU6050_PWR_MGMT_1, 0x01);   // disable sleep mode, PLL with X gyro
-    delay(2000);
-
-    // 重力加速度から求めた角度をカルマンフィルタの初期値とする。
-    float ax = (readMPU6050(MPU6050_ACCEL_XOUT_H) << 8) | readMPU6050(MPU6050_ACCEL_XOUT_L);
-    float ay = (readMPU6050(MPU6050_ACCEL_YOUT_H) << 8) | readMPU6050(MPU6050_ACCEL_YOUT_L);
-    float az = (readMPU6050(MPU6050_ACCEL_ZOUT_H) << 8) | readMPU6050(MPU6050_ACCEL_ZOUT_L);
-    float gy = 0;
-    for (int i = 0; i < 100; i++)
-    {
-        gy += (readMPU6050(MPU6050_GYRO_YOUT_H) << 8) | readMPU6050(MPU6050_GYRO_YOUT_L);
-    }
-    calib_gyro = gy / 131.0 / 100;
-
-    float pitch = atan(-ax / sqrt(ay * ay + az * az)) * RAD_TO_DEG;
-    kf.setAngle(pitch);
-    calib_angle = pitch;
-    prev_time = micros();
+    // ループ測定用に記録
+    pre_time = micros();
 }
 
 void loop()
 {
-
-    // 重力加速度から角度を求める。
-    float ax = (readMPU6050(MPU6050_ACCEL_XOUT_H) << 8) | readMPU6050(MPU6050_ACCEL_XOUT_L);
-
-    float ay = (readMPU6050(MPU6050_ACCEL_YOUT_H) << 8) | readMPU6050(MPU6050_ACCEL_YOUT_L);
-
-    float az = (readMPU6050(MPU6050_ACCEL_ZOUT_H) << 8) | readMPU6050(MPU6050_ACCEL_ZOUT_L);
-
-    float gy = (readMPU6050(MPU6050_GYRO_YOUT_H) << 8) | readMPU6050(MPU6050_GYRO_YOUT_L);
-
-    float pitch = atan(-ax / sqrt(ay * ay + az * az)) * RAD_TO_DEG;
-    float gyro = gy / 131.0 - calib_gyro;
-    if (abs(gyro) < 0.5)
-        gyro = 0;
-
-    // カルマンフィルタで角度(x,y)を計算する。
-    long cur_time = micros();
-    float dt = (float)(cur_time - prev_time) / 1000000; // μsec -> sec
-    prev_time = cur_time;
-    float degY = kf.calcAngle(pitch, gyro, dt);
-    degY -= calib_angle;
-
-    float diff_term = K3 * gyro;
-    float other_term = pid.calculate(0, degY, dt);
-
-    float motorVal;
-
-    if (diff_term * degY > 0)
-    {
-        motorVal = other_term;
-    }
-    else
-    {
-        motorVal = diff_term + other_term;
-    }
-    Serial.print(degY);
-    Serial.print("\t");
-
-    if (abs(degY) < 17)
-        drive(0, motorVal, false);
-    else
-        drive(0, 0, true);
-
-    delay(10);
+    adjust();  // キャリブレーションの変更
+    observe(); // センサの値を取得
+    estimat(); // センサの値から機体の姿勢を推定
+    plan();    // 車輪の駆動計画を行う
+    command(); // PICに車輪の回転数を司令
+    debug();   // 各変数の値をシリアルモニタに表示
+    delay(1);  // 一応入れておく
 }
-*/
-//////////////////////////////
 
-#include <Wire.h>
-#include <SoftwareSerial.h>
-#include "KalmanFilter.h"
-#include "IMU.h"
-
-SoftwareSerial mySerial(A2, A3); // RX, TX
-
-// 加速度/ジャイロセンサーの制御変数。
-KalmanFilter gKfx, gKfy; // カルマンフィルタ。
-float gCalibrateY;       // 初期化時の角度。（＝静止角とみなす）
-long gPrevMicros;        // loop()間隔の計測用。
-
-// 倒立振子の制御変数。
-float gPowerP, gPowerI, gPowerD; // 現在出力値とPID成分。
-
-void setup()
+// functions
+/////////////////////////////////////////////////////////////////////////////
+double calcAccelAngle()
 {
-    Serial.begin(115200);
-    mySerial.begin(57600);
+    double a[3];
+    for (int i = 0; i < 3; i++)
+        a[i] = getAccel(i);
 
-    // 加速度/ジャイロセンサーの初期化。
+    // 重力加速度（Z方向の加速度）を利用して角度を算出
+    return atan(-a[X] / sqrt(a[Y] * a[Y] + a[Z] * a[Z])) * RAD_TO_DEG;
+}
+
+void initIMU()
+{
+    // IMUに起動コマンドを送る
     Wire.begin();
-    if (readMPU6050(MPU6050_WHO_AM_I) != 0x68)
+    if (readIMU(IMU_WHO_AM_I) != 0x68)
     {
-        Serial.println("\nWHO_AM_I error.");
+        Serial.println("IMU ERROR");
         while (true)
             ;
     }
-    writeMPU6050(MPU6050_SMPLRT_DIV, 0x07);   // sample rate: 8kHz/(7+1) = 1kHz
-    writeMPU6050(MPU6050_CONFIG, 0x00);       // disable DLPF, gyro output rate = 8kHz
-    writeMPU6050(MPU6050_GYRO_CONFIG, 0x00);  // gyro range: ±250dps
-    writeMPU6050(MPU6050_ACCEL_CONFIG, 0x00); // accel range: ±2g
-    writeMPU6050(MPU6050_PWR_MGMT_1, 0x01);   // disable sleep mode, PLL with X gyro
-    delay(500);
 
-    // 重力加速度から求めた角度をカルマンフィルタの初期値とする。
-    float ax = (readMPU6050(MPU6050_ACCEL_XOUT_H) << 8) | readMPU6050(MPU6050_ACCEL_XOUT_L);
-    float ay = (readMPU6050(MPU6050_ACCEL_YOUT_H) << 8) | readMPU6050(MPU6050_ACCEL_YOUT_L);
-    float az = (readMPU6050(MPU6050_ACCEL_ZOUT_H) << 8) | readMPU6050(MPU6050_ACCEL_ZOUT_L);
-    float degRoll = atan2(ay, az) * RAD_TO_DEG;
-    float degPitch = atan(-ax / sqrt(ay * ay + az * az)) * RAD_TO_DEG;
-    gKfx.setAngle(degRoll);
-    gKfy.setAngle(degPitch);
-    gCalibrateY = degPitch;
-    gCalibrateY = 0;
-    gPrevMicros = micros();
+    // 各センサの設定と分解能を指定する
+    writeIMU(IMU_SMPLRT_DIV, 0x07);
+    writeIMU(IMU_CONFIG, 0x00);
+    writeIMU(IMU_GYRO_CONFIG, 0x00);
+    writeIMU(IMU_ACCEL_CONFIG, 0x00);
+    writeIMU(IMU_PWR_MGMT_1, 0x01);
 }
 
-void loop()
+void adjust()
 {
+    // 押されたボタンに応じてキャリブレーションを変更する
+    if (digitalRead(11) == LOW)
+        calib_angle -= 0.01;
 
-    // 重力加速度から角度を求める。
-    float ax = (readMPU6050(MPU6050_ACCEL_XOUT_H) << 8) | readMPU6050(MPU6050_ACCEL_XOUT_L);
-    float ay = (readMPU6050(MPU6050_ACCEL_YOUT_H) << 8) | readMPU6050(MPU6050_ACCEL_YOUT_L);
-    float az = (readMPU6050(MPU6050_ACCEL_ZOUT_H) << 8) | readMPU6050(MPU6050_ACCEL_ZOUT_L);
-    float degRoll = atan2(ay, az) * RAD_TO_DEG;
-    float degPitch = atan(-ax / sqrt(ay * ay + az * az)) * RAD_TO_DEG;
+    if (digitalRead(12) == LOW)
+        calib_angle += 0.01;
+}
 
-    // ジャイロで角速度を求める。
-    float gx = (readMPU6050(MPU6050_GYRO_XOUT_H) << 8) | readMPU6050(MPU6050_GYRO_XOUT_L);
-    float gy = (readMPU6050(MPU6050_GYRO_YOUT_H) << 8) | readMPU6050(MPU6050_GYRO_YOUT_L);
-    float gz = (readMPU6050(MPU6050_GYRO_ZOUT_H) << 8) | readMPU6050(MPU6050_GYRO_ZOUT_L);
-    float dpsX = gx / 131.0; // LSB sensitivity: 131 LSB/dps @ ±250dps
-    float dpsY = gy / 131.0;
-    float dpsZ = gz / 131.0;
+void observe()
+{
+    angle = calcAccelAngle(); // 加速度計から角度を仮計算
+    gyro = getGyro(Y);        // 角速度も測定しておく
+}
 
-    // カルマンフィルタで角度(x,y)を計算する。
-    long curMicros = micros();
-    float dt = (float)(curMicros - gPrevMicros) / 1000000; // μsec -> sec
-    gPrevMicros = curMicros;
-    float degX = gKfx.calcAngle(degRoll, dpsX, dt);
-    float degY = gKfy.calcAngle(degPitch, dpsY, dt);
-    degY -= gCalibrateY;
+void estimat()
+{
+    // カルマンフィルタと角度の積算で使用するループ時間を算出
+    uint32_t cur_time = micros();
+    dt = (double)(cur_time - pre_time) / 1000000;
+    pre_time = cur_time;
 
-    // PID制御でモーター出力を計算。
-    gPowerP = degY / 90;           // P成分：傾き-90～90度 → -1～1
-    gPowerI += gPowerP;            // I成分：傾きの積算。
-    gPowerD = dpsY / 250;          // D成分：角速度-250～250dps → -1～1
-    float power = gPowerP * 17.0 + // この数字は試行錯誤で調整。
-                  gPowerI * 1.5 +
-                  gPowerD * 2.0;
-    power = max(-1, min(1, power)); // → -1～1
+    // 角度を算出し，キャリブレーションを引く
+    angle = kf.calcAngle(angle, gyro, dt) - calib_angle;
+}
 
-    int dir = (-power > 0) ? 0 : 1;
-    int val = abs((int)(power * 255));
-    int sendVal = abs((int)(power * 100));
-    mySerial.write(dir << 7 | map(sendVal, 0, 100, 30, 100));
-    /*
-    if (abs(gPowerI) > 1)
-    {
-        if (gPowerI < 0)
-            gCalibrateY += 0.1;
-        else
-            gCalibrateY += 0.1;
-    }
-    */
-    // デバッグ用。
+void plan()
+{
+    integral += angle * dt;         // 角度を積算
+    P_val = KP * angle;             // 角度に比例
+    I_val = KI * integral;          // 角度の時間積分値を使用
+    D_val = KD * gyro;              // 角度の微分はジャイロの値を使用
+    power = P_val + I_val + D_val;  // 各項の総和をとる
+    power = max(-1, min(1, power)); // 値のガード
+}
+
+void command()
+{
+    int dir = (power >= 0) ? 0 : 1;    // CW → 0, CCW → 1
+    int val = abs((int)(power * 100)); // %に変換
+    val = map(val, 0, 100, 30, 100);   // duty<30%だとモータが回らない為
+    val = constrain(val, 0, 100);      // 値のガード
+
+    // 送信データ
+    // MSB      → モータの回転方向
+    // 下位7bit → 出力値（PWMのduty）
+    mySerial.write(dir << 7 | val);
+}
+
+void debug()
+{
     static int ps;
     if (++ps % 1 == 0)
     {
-
         Serial.print("Calib:");
-        Serial.print(gCalibrateY);
+        Serial.print(calib_angle);
         Serial.print("\tdt:");
-        Serial.print(dt);
-        Serial.print("\tdegY:");
-        Serial.print(degY);
+        Serial.print(dt, 6);
+        Serial.print("\tangle:");
+        Serial.print(angle);
         Serial.print("\tP:");
-        Serial.print(gPowerP);
+        Serial.print(P_val);
         Serial.print("\tI:");
-        Serial.print(gPowerI);
+        Serial.print(I_val);
         Serial.print("\tD:");
-        Serial.print(gPowerD);
+        Serial.print(D_val);
         Serial.print("\tpwr:");
         Serial.print(power);
-        Serial.println("");
+        Serial.println();
     }
-
-    delay(3);
 }
