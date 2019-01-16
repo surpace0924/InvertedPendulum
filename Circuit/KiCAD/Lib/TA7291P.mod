@@ -1,0 +1,104 @@
+PCBNEW-LibModule-V1  
+# encoding utf-8
+Units mm
+$INDEX
+HSIP10
+$EndINDEX
+$MODULE HSIP10
+Po 0 0 0 15 00000000 00000000 ~~
+Li HSIP10
+Cd HSIP10P 2.54 PACKAGE
+Sc 00000000
+At STD
+Op 0 0 0
+.SolderMask 0
+.SolderPaste 0
+T0 -12.7039 -3.17598 1.00031 1.00031 0 0.05 N V 21 "HSIP10"
+T1 -12.0886 4.45368 1.00195 1.00195 0 0.05 N V 21 "VAL**"
+DS -15.24 -2.54 -15.24 2.54 0.127 21
+DS -15.24 2.54 12.7 2.54 0.127 21
+DS 12.7 2.54 12.7 -2.54 0.127 21
+DS 12.7 -2.54 -15.24 -2.54 0.127 21
+T2 -15.252900 2.542150 1 1 0 .05 N V 21 "1"
+T2 -15.263000 1.271920 1 1 0 .05 N V 17 "."
+$PAD
+Sh "1" O 2.616 1.308 0 0 900
+Dr 0.8 0 0
+At STD N 00C0FFFF
+.SolderMask 0
+Ne 0 ""
+Po -12.7 0
+$EndPAD
+$PAD
+Sh "2" O 2.616 1.308 0 0 900
+Dr 0.8 0 0
+At STD N 00C0FFFF
+.SolderMask 0
+Ne 0 ""
+Po -10.16 0
+$EndPAD
+$PAD
+Sh "3" O 2.616 1.308 0 0 900
+Dr 0.8 0 0
+At STD N 00C0FFFF
+.SolderMask 0
+Ne 0 ""
+Po -7.62 0
+$EndPAD
+$PAD
+Sh "4" O 2.616 1.308 0 0 900
+Dr 0.8 0 0
+At STD N 00C0FFFF
+.SolderMask 0
+Ne 0 ""
+Po -5.08 0
+$EndPAD
+$PAD
+Sh "5" O 2.616 1.308 0 0 900
+Dr 0.8 0 0
+At STD N 00C0FFFF
+.SolderMask 0
+Ne 0 ""
+Po -2.54 0
+$EndPAD
+$PAD
+Sh "6" O 2.616 1.308 0 0 900
+Dr 0.8 0 0
+At STD N 00C0FFFF
+.SolderMask 0
+Ne 0 ""
+Po 0 0
+$EndPAD
+$PAD
+Sh "7" O 2.616 1.308 0 0 900
+Dr 0.8 0 0
+At STD N 00C0FFFF
+.SolderMask 0
+Ne 0 ""
+Po 2.54 0
+$EndPAD
+$PAD
+Sh "8" O 2.616 1.308 0 0 900
+Dr 0.8 0 0
+At STD N 00C0FFFF
+.SolderMask 0
+Ne 0 ""
+Po 5.08 0
+$EndPAD
+$PAD
+Sh "9" O 2.616 1.308 0 0 900
+Dr 0.8 0 0
+At STD N 00C0FFFF
+.SolderMask 0
+Ne 0 ""
+Po 7.62 0
+$EndPAD
+$PAD
+Sh "10" O 2.616 1.308 0 0 900
+Dr 0.8 0 0
+At STD N 00C0FFFF
+.SolderMask 0
+Ne 0 ""
+Po 10.16 0
+$EndPAD
+$EndMODULE HSIP10

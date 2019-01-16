@@ -18,12 +18,12 @@ const unsigned int PWM_CNT = (int)(1000.0 / MT_FREQ) - 1;
 int dir = 0;
 int pwm = 0;
 
-//ƒvƒƒgƒ^ƒCƒvéŒ¾
+//ï¿½vï¿½ï¿½ï¿½gï¿½^ï¿½Cï¿½vï¿½éŒ¾
 void initSystem(void);
 void driveMotor(void);
 
-// ƒVƒŠƒAƒ‹óMŠ„‚è‚İ
-// óMŒãCƒrƒbƒgƒ}ƒXƒN‚µ‚Äƒf[ƒ^‚ğƒfƒR[ƒh
+// ï¿½Vï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½Mï¿½ï¿½ï¿½èï¿½ï¿½
+// ï¿½ï¿½Mï¿½ï¿½Cï¿½rï¿½bï¿½gï¿½}ï¿½Xï¿½Nï¿½ï¿½ï¿½Äƒfï¿½[ï¿½^ï¿½ï¿½fï¿½Rï¿½[ï¿½h
 #INT_RDA
 void rda(void)
 {
@@ -37,19 +37,19 @@ void initSystem(void)
 {
    setup_oscillator(OSC_NORMAL | OSC_16MHZ | OSC_PLL_ON);
 
-   // ƒsƒ“ŠÖŒW
+   // ï¿½sï¿½ï¿½ï¿½ÖŒW
    set_tris_a(0);
    set_tris_b(0b00000010);
    output_a(0);
    output_b(0);
 
-   // ƒVƒŠƒAƒ‹’ÊMŠÖŒW
+   // ï¿½Vï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ÊMï¿½ÖŒW
    setup_uart(true);
    set_uart_speed(57600);
    enable_interrupts(INT_RDA);
    enable_interrupts(GLOBAL);
 
-   // CCP(PWM)ŠÖŒW
+   // CCP(PWM)ï¿½ÖŒW
    setup_ccp1(CCP_PWM);
    setup_ccp2(CCP_PWM);
    setup_timer_2(T2_DIV_BY_4, PWM_CNT, 1);
